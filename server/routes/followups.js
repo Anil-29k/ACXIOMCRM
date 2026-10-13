@@ -13,7 +13,7 @@ const router = express.Router();
 router.use(auth);
 
 const TYPES = ["Call", "Email", "Meeting", "Task", "Other"];
-const STATUSES = ["Pending", "Completed", "Cancelled"];
+const STATUSES = ["Pending", "Completed", "Missed", "Cancelled"];
 const PRIORITIES = ["Low", "Medium", "High"];
 const REFERENCES = ["customer", "lead", "opportunity", "assignedTo"];
 

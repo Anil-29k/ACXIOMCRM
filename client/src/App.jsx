@@ -10,7 +10,9 @@ import FollowUpsPage from "./pages/FollowUpsPage";
 import MainLayout from "./layouts/MainLayout";
 import ActivitiesPage from "./pages/ActivitiesPage";
 import AuditLogsPage from "./pages/AuditLogsPage";
+import UsersPage from "./pages/UsersPage";
 import "./App.css";
+import "./theme-overrides.css";
 
 export default function App() {
   const [token, setToken] = useState(
@@ -31,6 +33,8 @@ export default function App() {
     leads: 0,
     opportunities: 0,
     pipelineValue: 0,
+    leadByStatus: {},
+    opportunityByStage: {},
   });
 
   useEffect(() => {
@@ -50,6 +54,8 @@ export default function App() {
           leads: data.leads?.total ?? 0,
           opportunities: data.opportunities?.total ?? 0,
           pipelineValue: data.opportunities?.pipelineValue ?? 0,
+          leadByStatus: data.leads?.byStatus ?? {},
+          opportunityByStage: data.opportunities?.byStage ?? {},
         });
       } catch (error) {
         if (!cancelled) {
@@ -106,6 +112,9 @@ export default function App() {
       case "audit-logs":
         return <AuditLogsPage />;
 
+      case "users":
+        return <UsersPage />;
+
       default:
         return (
           <DashboardPage
@@ -114,6 +123,8 @@ export default function App() {
             leadCount={stats.leads}
             opportunityCount={stats.opportunities}
             pipelineValue={stats.pipelineValue}
+            leadByStatus={stats.leadByStatus}
+            opportunityByStage={stats.opportunityByStage}
           />
         );
     }

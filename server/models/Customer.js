@@ -28,6 +28,8 @@ const customerSchema = new mongoose.Schema({
     enum: ["Active", "Inactive"],
     default: "Active"
   },
+  notes: { type: String, trim: true, maxlength: 2000, default: "" },
+  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
 }, { timestamps: true });
 

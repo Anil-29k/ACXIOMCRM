@@ -9,10 +9,12 @@ const emptyLead = {
   companyName: "",
   source: "Website",
   status: "New",
+  priority: "Medium",
   expectedValue: 0,
 };
 
-const statuses = ["New", "Contacted", "Qualified", "Lost", "Converted"];
+const statuses = ["New", "Contacted", "Qualified", "Unqualified", "Lost", "Converted"];
+const priorities = ["Low", "Medium", "High"];
 const sources = ["Website", "Referral", "Social Media", "Cold Call", "Other"];
 
 export default function LeadsPage() {
@@ -61,6 +63,7 @@ export default function LeadsPage() {
       companyName: item.companyName || "",
       source: item.source || "Website",
       status: item.status || "New",
+      priority: item.priority || "Medium",
       expectedValue: item.expectedValue ?? 0,
     });
     setError("");
@@ -217,6 +220,13 @@ export default function LeadsPage() {
                     {source}
                   </option>
                 ))}
+              </select>
+            </div>
+
+            <div className="col-md-4">
+              <label className="form-label">Priority</label>
+              <select className="form-select" name="priority" value={lead.priority} onChange={updateLead}>
+                {priorities.map((priority) => <option key={priority}>{priority}</option>)}
               </select>
             </div>
 

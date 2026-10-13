@@ -8,7 +8,7 @@ const { auth } = require("../middleware/auth");
 router.use(auth);
 
 const VALID_STATUSES = [
-  "New", "Contacted", "Qualified", "Lost", "Converted"
+  "New", "Contacted", "Qualified", "Unqualified", "Lost", "Converted"
 ];
 
 const VALID_SOURCES = [
@@ -119,7 +119,7 @@ router.post("/", async (req, res) => {
   try {
     const {
       leadName, email, phone, companyName,
-      source, status, expectedValue
+      source, status, priority, expectedValue, assignedTo
     } = req.body;
 
     if (source && !VALID_SOURCES.includes(source)) {
@@ -128,6 +128,14 @@ router.post("/", async (req, res) => {
 
     if (status && !VALID_STATUSES.includes(status)) {
       return res.status(400).json({ message: "Invalid lead status" });
+    }
+
+    if (priority && !["Low", "Medium", "High"].includes(priority)) {
+      return res.status(400).json({ message: "Invalid lead priority" });
+    }
+
+    if (assignedTo && !mongoose.isValidObjectId(assignedTo)) {
+      return res.status(400).json({ message: "Invalid assigned user" });
     }
 
     if (
@@ -146,7 +154,9 @@ router.post("/", async (req, res) => {
       companyName,
       source,
       status,
+      priority,
       expectedValue,
+      assignedTo: isAdminOrManager(req.user) ? assignedTo : req.user.id,
       createdBy: req.user.id
     });
 
@@ -190,7 +200,8 @@ router.put("/:id", async (req, res) => {
 
     const allowed = [
       "leadName", "email", "phone", "companyName",
-      "source", "status", "expectedValue"
+      "source", "status", "priority", "expectedValue",
+      ...(isAdminOrManager(req.user) ? ["assignedTo"] : [])
     ];
 
     for (const key of allowed) {
@@ -205,6 +216,10 @@ router.put("/:id", async (req, res) => {
 
     if (!VALID_STATUSES.includes(lead.status)) {
       return res.status(400).json({ message: "Invalid lead status" });
+    }
+
+    if (!["Low", "Medium", "High"].includes(lead.priority)) {
+      return res.status(400).json({ message: "Invalid lead priority" });
     }
 
     if (

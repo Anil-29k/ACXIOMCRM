@@ -2,8 +2,33 @@
 const express = require("express");
 const { auth, allowRoles } = require("../middleware/auth");
 const Opportunity = require("../models/Opportunity");
+const Customer = require("../models/Customer");
+const Lead = require("../models/Lead");
+const FollowUp = require("../models/FollowUp");
 
 const router = express.Router();
+
+function scoped(user) {
+  if (["Admin", "Manager"].includes(user.role)) return {};
+  return { $or: [{ createdBy: user.id }, { assignedTo: user.id }] };
+}
+
+// Consolidated authorized report data for dashboard/report consumers.
+router.get("/overview", auth, async (req, res) => {
+  try {
+    const scope = scoped(req.user);
+    const [customers, leads, followUps, opportunities] = await Promise.all([
+      Customer.aggregate([{ $match: scope }, { $group: { _id: "$status", count: { $sum: 1 } } }]),
+      Lead.aggregate([{ $match: scope }, { $group: { _id: "$status", count: { $sum: 1 } } }]),
+      FollowUp.aggregate([{ $match: scope }, { $group: { _id: "$status", count: { $sum: 1 } } }]),
+      Opportunity.aggregate([{ $match: scope }, { $group: { _id: "$stage", count: { $sum: 1 }, amount: { $sum: "$amount" }, weightedAmount: { $sum: { $multiply: ["$amount", { $divide: ["$probability", 100] }] } } } }]),
+    ]);
+    res.json({ customers, leads, followUps, opportunities, generatedAt: new Date().toISOString() });
+  } catch (error) {
+    console.error("Overview report error:", error.message);
+    res.status(500).json({ message: "Could not generate overview report" });
+  }
+});
 
 router.get(
   "/pipeline",

@@ -3,6 +3,7 @@ const router = require("express").Router();
 const mongoose = require("mongoose");
 const Customer = require("../models/Customer");
 const AuditLog = require("../models/AuditLog");
+const User = require("../models/User");
 const { auth } = require("../middleware/auth");
 
 router.use(auth);
@@ -15,7 +16,8 @@ const isAdminOrManager = (user) =>
 
 const canAccess = (customer, user) =>
   isAdminOrManager(user) ||
-  String(customer.createdBy) === String(user.id);
+  String(customer.createdBy) === String(user.id) ||
+  String(customer.assignedTo) === String(user.id);
 
 async function writeAudit(userId, action, customer) {
   await AuditLog.create({
@@ -52,7 +54,13 @@ router.get("/", async (req, res) => {
     // Sales executives see customers they created.
     // Admins and managers can view all customers.
     if (!isAdminOrManager(req.user)) {
-      filter.createdBy = req.user.id;
+      const ownership = { $or: [{ createdBy: req.user.id }, { assignedTo: req.user.id }] };
+      if (filter.$or) {
+        filter.$and = [{ $or: filter.$or }, ownership];
+        delete filter.$or;
+      } else {
+        Object.assign(filter, ownership);
+      }
     }
 
     const customers = await Customer.find(filter)
@@ -95,8 +103,12 @@ router.post("/", async (req, res) => {
   try {
     const {
       customerName, email, phone, companyName,
-      address, city, state, status
+      address, city, state, status, notes, assignedTo
     } = req.body;
+
+    if (assignedTo && !(await User.exists({ _id: assignedTo, role: "SalesExecutive", isActive: true }))) {
+      return res.status(400).json({ message: "Assigned sales executive not found" });
+    }
 
     const customer = await Customer.create({
       customerName,
@@ -107,6 +119,8 @@ router.post("/", async (req, res) => {
       city,
       state,
       status,
+      notes,
+      assignedTo: isAdminOrManager(req.user) ? assignedTo : req.user.id,
       createdBy: req.user.id
     });
 
@@ -156,7 +170,7 @@ router.put("/:id", async (req, res) => {
 
     const allowed = [
       "customerName", "email", "phone", "companyName",
-      "address", "city", "state", "status"
+      "address", "city", "state", "status", "notes", "assignedTo"
     ];
 
     for (const key of allowed) {
@@ -164,6 +178,11 @@ router.put("/:id", async (req, res) => {
         customer[key] = req.body[key];
       }
     }
+
+    if (customer.assignedTo && !(await User.exists({ _id: customer.assignedTo, role: "SalesExecutive", isActive: true }))) {
+      return res.status(400).json({ message: "Assigned sales executive not found" });
+    }
+    if (!isAdminOrManager(req.user)) customer.assignedTo = req.user.id;
 
     await customer.save();
 

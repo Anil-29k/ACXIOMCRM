@@ -27,8 +27,13 @@ const leadSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["New", "Contacted", "Qualified", "Lost", "Converted"],
+    enum: ["New", "Contacted", "Qualified", "Unqualified", "Lost", "Converted"],
     default: "New"
+  },
+  priority: {
+    type: String,
+    enum: ["Low", "Medium", "High"],
+    default: "Medium"
   },
   expectedValue: { type: Number, min: 0, default: 0 },
   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "User" },

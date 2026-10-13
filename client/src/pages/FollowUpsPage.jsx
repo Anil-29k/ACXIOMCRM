@@ -15,7 +15,7 @@ const emptyFollowUp = {
 };
 
 const types = ["Call", "Email", "Meeting", "Task", "Other"];
-const statuses = ["Pending", "Completed", "Cancelled"];
+const statuses = ["Pending", "Completed", "Missed", "Cancelled"];
 const priorities = ["Low", "Medium", "High"];
 
 function getId(value) {
